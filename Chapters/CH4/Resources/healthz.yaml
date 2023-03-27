@@ -1,0 +1,59 @@
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: healthz
+apiVersion: v1
+data:
+  healthz: |+
+    #!/bin/bash
+
+    WORKDIR="/var/tmp"
+    OCCLI="downloads-openshift-console.apps.ocp4.example.com/amd64/linux/oc.tar"
+
+
+    cd $WORKDIR
+
+    curl -O -k "https://$OCCLI"
+    tar xvf oc.tar
+    ./oc whoami
+
+    myhealth=`./oc get --raw=/healthz`
+
+    myalive=`./oc get --raw=/livez`
+
+    if [[ "$myhealth" = "ok" && "$myalive" == "ok" ]]; then
+        echo "The cluster is healthy and alive"
+    else
+        echo "Something is wrong"
+        echo "Health: $myhealth"
+        echo "Live: $myalive"
+    fi
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  creationTimestamp: null
+  name: healthz
+spec:
+  template:
+    metadata:
+      creationTimestamp: null
+    spec:
+      containers:
+      - command:
+        - bash
+        - "/var/tmp/healthchecks/healthz"
+        image: registry.access.redhat.com/ubi9/ubi
+        name: healthz
+        resources: {}
+        volumeMounts:
+        - mountPath: /var/tmp/healthchecks
+          name: healthz
+      restartPolicy: Never
+      volumes:
+      - configMap:
+          defaultMode: 0660
+          name: healthz
+        name: healthz
