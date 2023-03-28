@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: securetest
+  name: securetest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: securetest
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: securetest
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: "RuntimeDefault"
+      containers:
+      - command:
+        - sleep
+        - "5000"
+        image: registry.access.redhat.com/ubi9/ubi
+        name: ubi
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
